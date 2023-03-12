@@ -4,6 +4,7 @@ using Amazon.S3.Model;
 using dotenv.net;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using TrodoDataExporter.Models;
 
 namespace TrodoDataExporter.Controllers
 {
@@ -12,25 +13,22 @@ namespace TrodoDataExporter.Controllers
     public class ScraperController : ControllerBase
     {
         private readonly ILogger<ScraperController> _logger;
-
-        private readonly string accessKey;
-        private readonly string secretKey;
-
+        private readonly string? accessKey;
+        private readonly string? secretKey;
         private readonly string scrapeUrl = @"https://www.trodo.se/";
-
         private const string BUCKET_NAME = "trodo-scraper";
-
         private IAmazonS3 s3Client;
 
         public ScraperController(ILogger<ScraperController> logger)
         {
-            DotEnv.Load();
+            _logger = logger;
 
+            //Loading acess keys from environment variables
+            DotEnv.Load();
             accessKey = Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
             secretKey = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
 
-            _logger = logger;
-
+            //Setting s3 client options
             s3Client = new AmazonS3Client(accessKey, secretKey, new AmazonS3Config
             {
                 ServiceURL = scrapeUrl,
@@ -41,7 +39,7 @@ namespace TrodoDataExporter.Controllers
         [HttpGet(Name = "GetS3Object")]
         public async Task<Product[]> Get()
         {
-            // Retrieve an object from the S3 bucket
+            // Retrieve all objects from the S3 bucket
             ListObjectsV2Request request = new ListObjectsV2Request
             {
                 BucketName = BUCKET_NAME
@@ -49,27 +47,34 @@ namespace TrodoDataExporter.Controllers
 
             ListObjectsV2Response response = await s3Client.ListObjectsV2Async(request);
 
+            //Sort array in order based on what object was last modified
             S3Object[] objectsArray = response.S3Objects.ToArray();
             S3Object latestObject = objectsArray.Aggregate((j, k) => k.LastModified > j.LastModified ? k : j);
 
+            //Get the content of the latest object
             var getObjectRequest = new GetObjectRequest
             {
                 BucketName = BUCKET_NAME,
                 Key = latestObject.Key
             };
 
-            var result = await s3Client.GetObjectAsync(getObjectRequest);
-            using var streamReader = new StreamReader(result.ResponseStream);
-            var products = new List<Product>();
-            while (!streamReader.EndOfStream)
+            var result = await s3Client.GetObjectAsync(getObjectRequest).ConfigureAwait(false);
+
+            //Deserialize object to Product model and return
+            using (var streamReader = new StreamReader(result.ResponseStream))
             {
-                string line = await streamReader.ReadLineAsync();
-                if (!string.IsNullOrWhiteSpace(line))
+                var products = new List<Product>();
+                while (!streamReader.EndOfStream)
                 {
-                    products.Add(JsonConvert.DeserializeObject<Product>(line));
+                    string line = await streamReader.ReadLineAsync().ConfigureAwait(false);
+                    if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        Product product = JsonConvert.DeserializeObject<Product>(line);
+                        if (product != null) products.Add(product);
+                    }
                 }
+                return products.ToArray();
             }
-            return products.ToArray();
         }
     }
 }
