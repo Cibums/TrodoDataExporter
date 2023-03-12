@@ -37,43 +37,62 @@ namespace TrodoDataExporter.Controllers
         }
 
         [HttpGet(Name = "GetS3Object")]
-        public async Task<Product[]> Get()
+        public async Task<ActionResult<Product[]>> Get()
         {
-            // Retrieve all objects from the S3 bucket
-            ListObjectsV2Request request = new ListObjectsV2Request
+            try
             {
-                BucketName = BUCKET_NAME
-            };
-
-            ListObjectsV2Response response = await s3Client.ListObjectsV2Async(request);
-
-            //Sort array in order based on what object was last modified
-            S3Object[] objectsArray = response.S3Objects.ToArray();
-            S3Object latestObject = objectsArray.Aggregate((j, k) => k.LastModified > j.LastModified ? k : j);
-
-            //Get the content of the latest object
-            var getObjectRequest = new GetObjectRequest
-            {
-                BucketName = BUCKET_NAME,
-                Key = latestObject.Key
-            };
-
-            var result = await s3Client.GetObjectAsync(getObjectRequest).ConfigureAwait(false);
-
-            //Deserialize object to Product model and return
-            using (var streamReader = new StreamReader(result.ResponseStream))
-            {
-                var products = new List<Product>();
-                while (!streamReader.EndOfStream)
+                // Retrieve all objects from the S3 bucket
+                ListObjectsV2Request request = new ListObjectsV2Request
                 {
-                    string line = await streamReader.ReadLineAsync().ConfigureAwait(false);
-                    if (!string.IsNullOrWhiteSpace(line))
-                    {
-                        Product product = JsonConvert.DeserializeObject<Product>(line);
-                        if (product != null) products.Add(product);
-                    }
+                    BucketName = BUCKET_NAME
+                };
+
+                ListObjectsV2Response response = await s3Client.ListObjectsV2Async(request);
+
+                //Sort array in order based on what object was last modified
+                S3Object[] objectsArray = response.S3Objects.ToArray();
+
+                if (objectsArray.Length <= 0)
+                {
+                    return NotFound("Could not find any scraped data");
                 }
-                return products.ToArray();
+
+                S3Object latestObject = objectsArray.Aggregate((j, k) => k.LastModified > j.LastModified ? k : j);
+
+                //Get the content of the latest object
+                var getObjectRequest = new GetObjectRequest
+                {
+                    BucketName = BUCKET_NAME,
+                    Key = latestObject.Key
+                };
+
+                var result = await s3Client.GetObjectAsync(getObjectRequest).ConfigureAwait(false);
+
+                //Deserialize object to Product model and return
+                using (var streamReader = new StreamReader(result.ResponseStream))
+                {
+                    var products = new List<Product>();
+                    while (!streamReader.EndOfStream)
+                    {
+                        string? line = await streamReader.ReadLineAsync().ConfigureAwait(false);
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            Product? product = JsonConvert.DeserializeObject<Product>(line);
+                            if (product != null) products.Add(product);
+                        }
+                    }
+                    return Ok(products.ToArray());
+                }
+            }
+            catch (AmazonS3Exception e)
+            {
+                return StatusCode(500, $"AmazonS3Exception: {e.Message}");
+            }
+            catch (Exception e)
+            {
+                // Log the exception and return an error response
+                _logger.LogError(e, "An error occurred while retrieving the S3 object.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
         }
     }
