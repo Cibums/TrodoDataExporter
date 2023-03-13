@@ -56,7 +56,6 @@ namespace TrodoDataExporter.Controllers
             }
         }
 
-
         [HttpGet("GetByCategory/{category}")]
         public async Task<ActionResult<Product[]>> GetProductsFromBrand(string category)
         {
