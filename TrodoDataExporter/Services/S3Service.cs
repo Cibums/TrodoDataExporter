@@ -2,6 +2,7 @@
 using Amazon.S3;
 using Amazon.S3.Model;
 using dotenv.net;
+using Microsoft.Extensions.Caching.Memory;
 using Newtonsoft.Json;
 using TrodoDataExporter.Models;
 
@@ -12,8 +13,9 @@ namespace TrodoDataExporter.Services
         private readonly string? accessKey;
         private readonly string? secretKey;
         private readonly string scrapeUrl = @"https://www.trodo.se/";
+        private readonly MemoryCache _cache;
         private const string BUCKET_NAME = "trodo-scraper";
-        private IAmazonS3 s3Client;
+        private IAmazonS3 _s3Client;
 
         public S3Service()
         {
@@ -22,8 +24,10 @@ namespace TrodoDataExporter.Services
             accessKey = Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
             secretKey = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
 
+            _cache = new MemoryCache(new MemoryCacheOptions());
+
             //Setting s3 client options
-            s3Client = new AmazonS3Client(accessKey, secretKey, new AmazonS3Config
+            _s3Client = new AmazonS3Client(accessKey, secretKey, new AmazonS3Config
             {
                 ServiceURL = scrapeUrl,
                 RegionEndpoint = RegionEndpoint.EUNorth1
@@ -37,13 +41,25 @@ namespace TrodoDataExporter.Services
         /// <exception cref="FileNotFoundException"></exception>
         public async Task<GetObjectResponse> GetLatestS3Object()
         {
+            var cacheKey = "LatestS3Object";
+
+            // Check cache for latest S3 object
+            if (_cache.TryGetValue(cacheKey, out GetObjectResponse cachedResponse))
+            {
+                // Check if cache is too old
+                if (DateTime.UtcNow - cachedResponse.LastModified < TimeSpan.FromHours(1))
+                {
+                    return cachedResponse;
+                }
+            }
+
             // Retrieve all objects from the S3 bucket
             ListObjectsV2Request request = new ListObjectsV2Request
             {
                 BucketName = BUCKET_NAME
             };
 
-            ListObjectsV2Response response = await s3Client.ListObjectsV2Async(request);
+            ListObjectsV2Response response = await _s3Client.ListObjectsV2Async(request);
 
             //Sort array in order based on what object was last modified
             S3Object[] objectsArray = response.S3Objects.ToArray();
@@ -62,9 +78,12 @@ namespace TrodoDataExporter.Services
                 Key = latestObject.Key
             };
 
-            var result = await s3Client.GetObjectAsync(getObjectRequest).ConfigureAwait(false);
+            var objectResponse = await _s3Client.GetObjectAsync(getObjectRequest).ConfigureAwait(false);
 
-            return result;
+            // Store response in cache
+            _cache.Set(cacheKey, objectResponse, DateTimeOffset.UtcNow.AddHours(1));
+
+            return objectResponse;
         }
 
         /// <summary>
