@@ -16,5 +16,50 @@
         public string? description { get; set; }
         public string? descriptionHtml { get; set; }
         public List<AdditionalProperty>? additionalProperty { get; set; }
+
+        public bool? IsInStock()
+        {
+            return offers?.FirstOrDefault()?.availability?.Equals("InStock");
+        }
+
+        public decimal? Price()
+        {
+            string? priceString = offers?.FirstOrDefault()?.price?.Replace(".", ",");
+            return decimal.TryParse(priceString, out decimal priceDecimal) ? priceDecimal : null;
+        }
+
+        public string Manufacturer()
+        {
+            return SingleProperty("tillverkare");
+        }
+
+        public string ArticleNumber()
+        {
+            return SingleProperty("art. nr.");
+        }
+
+        public string Id()
+        {
+            return SingleProperty("id");
+        }
+
+        public string EAN()
+        {
+            return SingleProperty("ean");
+        }
+
+        private string SingleProperty(string propertyName)
+        {
+            AdditionalProperty? property = additionalProperty?.FirstOrDefault(prop => prop.name?.ToLower() == propertyName.ToLower());
+
+            if (property != null)
+            {
+                return property.value?.ToLower() ?? string.Empty;
+            }
+            else
+            {
+                return string.Empty;
+            }
+        }
     }
 }
