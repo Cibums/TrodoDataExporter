@@ -36,7 +36,7 @@ namespace TrodoDataExporter.Controllers
             });
         }
 
-        [HttpGet(Name = "GetProducts")]
+        [HttpGet("Get")]
         public async Task<ActionResult<Product[]>> GetProducts()
         {
             try
@@ -56,26 +56,32 @@ namespace TrodoDataExporter.Controllers
             }
         }
 
-        //[HttpGet(Name = "GetFilteredProducts")]
-        //public async Task<ActionResult<Product[]>> GetProductsFromBrand(string brand)
-        //{
-        //    try
-        //    {
-        //        GetObjectResponse response = await GetLatestS3Object();
-        //        Product[] allProducts = await DeserializeS3Object(response);
-        //        return allProducts.Where(p => p.brand?.ToLower() == brand.ToLower()).ToArray();
-        //    }
-        //    catch (AmazonS3Exception e)
-        //    {
-        //        return StatusCode(500, $"AmazonS3Exception: {e.Message}");
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        // Log the exception and return an error response
-        //        _logger.LogError(e, "An error occurred while retrieving the S3 object.");
-        //        return StatusCode(StatusCodes.Status500InternalServerError);
-        //    }
-        //}
+
+        [HttpGet("GetByCategory/{category}")]
+        public async Task<ActionResult<Product[]>> GetProductsFromBrand(string category)
+        {
+            try
+            {
+                GetObjectResponse response = await GetLatestS3Object();
+                Product[] allProducts = await DeserializeS3Object(response);
+
+                return allProducts.Where(p =>
+                {
+                    Console.WriteLine(p.breadcrumbs[p.breadcrumbs.Count - 2].name);
+                    return p.breadcrumbs.Any(b => b.name?.ToLower() == category.ToLower());
+                }).ToArray();
+            }
+            catch (AmazonS3Exception e)
+            {
+                return StatusCode(500, $"AmazonS3Exception: {e.Message}");
+            }
+            catch (Exception e)
+            {
+                // Log the exception and return an error response
+                _logger.LogError(e, "An error occurred while retrieving the S3 object.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
 
         private async Task<GetObjectResponse> GetLatestS3Object()
         {
