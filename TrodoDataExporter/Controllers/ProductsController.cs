@@ -29,6 +29,7 @@ namespace TrodoDataExporter.Controllers
         [HttpGet("Get")]
         public async Task<ActionResult<ProductSimplified[]>> GetProducts()
         {
+            _logger.LogInformation("Getting all products");
             GetObjectResponse response = await _s3Service.GetLatestS3Object();
             Product[] products = await _s3Service.DeserializeS3Object(response);
             return products.Select(product => new ProductSimplified(product)).ToArray();
@@ -56,6 +57,7 @@ namespace TrodoDataExporter.Controllers
             bool? isInStock = null
         )
         {
+            _logger.LogInformation("Getting filtered products");
             GetObjectResponse response = await _s3Service.GetLatestS3Object();
             Product[] allProducts = await _s3Service.DeserializeS3Object(response);
             Func<Product, bool> filter = p =>

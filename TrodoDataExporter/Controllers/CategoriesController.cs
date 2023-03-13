@@ -22,6 +22,7 @@ namespace TrodoDataExporter.Controllers
         [HttpGet("CategoryTree")]
         public async Task<ActionResult<IEnumerable<Category>>> GetCategoryTree()
         {
+            _logger.LogInformation("Getting all categories");
             var response = await _s3Service.GetLatestS3Object();
             var products = await _s3Service.DeserializeS3Object(response);
 
@@ -37,6 +38,7 @@ namespace TrodoDataExporter.Controllers
         [HttpGet("MostSpecificCategories")]
         public async Task<ActionResult<HashSet<string>>> GetMostSpecificCategories()
         {
+            _logger.LogInformation("Getting most specific categories");
             var response = await _s3Service.GetLatestS3Object();
             var products = await _s3Service.DeserializeS3Object(response);
 
