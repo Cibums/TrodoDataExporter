@@ -48,6 +48,11 @@
             return SingleProperty("ean");
         }
 
+        /// <summary>
+        /// Gets the value of a specific property from the produc'ts additional properties
+        /// </summary>
+        /// <param name="propertyName"></param>
+        /// <returns></returns>
         private string SingleProperty(string propertyName)
         {
             AdditionalProperty? property = additionalProperty?.FirstOrDefault(prop => prop.name?.ToLower() == propertyName.ToLower());

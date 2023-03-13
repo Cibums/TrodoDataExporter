@@ -30,6 +30,11 @@ namespace TrodoDataExporter.Services
             });
         }
 
+        /// <summary>
+        /// Gets the latest batch of products scraped by Zyte.com
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="FileNotFoundException"></exception>
         public async Task<GetObjectResponse> GetLatestS3Object()
         {
             // Retrieve all objects from the S3 bucket
@@ -62,6 +67,11 @@ namespace TrodoDataExporter.Services
             return result;
         }
 
+        /// <summary>
+        /// Deserializes the a response from AWS to Product[]
+        /// </summary>
+        /// <param name="objectResponse"></param>
+        /// <returns></returns>
         public async Task<Product[]> DeserializeS3Object(GetObjectResponse objectResponse)
         {
             //Deserialize object to Product model and return
