@@ -14,7 +14,7 @@ namespace TrodoDataExporter.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly ILogger<ProductsController> _logger;
-        private readonly IS3Service _s3Service;
+        public IS3Service _s3Service;
 
         public ProductsController(ILogger<ProductsController> logger, IS3Service s3Service)
         {
