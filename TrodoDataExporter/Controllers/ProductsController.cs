@@ -35,25 +35,12 @@ namespace TrodoDataExporter.Controllers
         }
 
         /// <summary>
-        /// Gets a JSON of all products from Trodo.se in a certain category
-        /// </summary>
-        /// <param name="category"></param>
-        /// <returns></returns>
-        [HttpGet("GetByCategory/{category}")]
-        public async Task<ActionResult<Product[]>> GetProductsFromBrand(string category)
-        {
-            GetObjectResponse response = await _s3Service.GetLatestS3Object();
-            Product[] allProducts = await _s3Service.DeserializeS3Object(response);
-
-            return allProducts.Where(p => p.breadcrumbs.Any(b => b.name?.ToLower() == category.ToLower())).ToArray();
-        }
-
-        /// <summary>
         /// Gets a JSON of all products from Trodo.se after going through a filtering process
         /// </summary>
         /// <param name="manufacturer"></param>
         /// <param name="ean"></param>
         /// <param name="articleNumber"></param>
+        /// <param name="category"></param>
         /// <param name="minPrice"></param>
         /// <param name="maxPrice"></param>
         /// <param name="isInStock"></param>
@@ -63,6 +50,7 @@ namespace TrodoDataExporter.Controllers
             string? manufacturer = null,
             string? ean = null,
             string? articleNumber = null,
+            string? category = null,
             decimal? minPrice = null,
             decimal? maxPrice = null,
             bool? isInStock = null
@@ -75,6 +63,7 @@ namespace TrodoDataExporter.Controllers
                 (ean == null || p.EAN().ToLower().Equals(ean.ToLower())) &&
                 (articleNumber == null || p.ArticleNumber().ToLower().Equals(articleNumber.ToLower())) &&
                 (isInStock == null || p.IsInStock().Equals(isInStock)) &&
+                (category == null || p.breadcrumbs.Any(b => b.name?.ToLower() == category.ToLower())) &&
                 (minPrice == null || p.Price() >= minPrice) &&
                 (maxPrice == null || p.Price() <= maxPrice);
 
