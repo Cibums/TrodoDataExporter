@@ -26,7 +26,7 @@ namespace TrodoDataExporter.Controllers
         /// Gets a JSON of all products from Trodo.se
         /// </summary>
         /// <returns></returns>
-        [HttpGet("get")]
+        [HttpGet("Get")]
         public async Task<ActionResult<ProductSimplified[]>> GetProducts()
         {
             try

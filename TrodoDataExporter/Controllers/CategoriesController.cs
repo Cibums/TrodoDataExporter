@@ -4,8 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using TrodoDataExporter.Models;
 using TrodoDataExporter.Services;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace TrodoDataExporter.Controllers
 {
     [Route("api/[controller]")]
@@ -22,9 +20,31 @@ namespace TrodoDataExporter.Controllers
         }
 
         [HttpGet("CategoryTree")]
-        public async Task<IEnumerable<string>> GetCategoryTree()
+        public async Task<ActionResult<IEnumerable<Category>>> GetCategoryTree()
         {
-            return new string[] { "value1", "value2" };
+            try
+            {
+                var response = await _s3Service.GetLatestS3Object();
+                var products = await _s3Service.DeserializeS3Object(response);
+
+                var categoryPaths = products
+                .Select(product => product.CategoryPath())
+                .Where(category => !string.IsNullOrEmpty(category))
+                .ToList();
+
+                var categoryTree = CategoryParser.Parse(categoryPaths);
+                return Ok(categoryTree);
+            }
+            catch (AmazonS3Exception e)
+            {
+                return StatusCode(500, $"AmazonS3Exception: {e.Message}");
+            }
+            catch (Exception e)
+            {
+                // Log the exception and return an error response
+                _logger.LogError(e, "An error occurred while retrieving the S3 object.");
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
 
         [HttpGet("MostSpecificCategories")]
