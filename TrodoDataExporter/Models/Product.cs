@@ -48,6 +48,20 @@
             return SingleProperty("ean");
         }
 
+        public string CategoryPath()
+        {
+            if (breadcrumbs == null || breadcrumbs.Count == 0) return string.Empty;
+
+            return string.Join("/", breadcrumbs.Select(crumb => crumb.name));
+        }
+
+        public string? MostSpecificCategory()
+        {
+            if (breadcrumbs == null || breadcrumbs.Count < 2) return string.Empty;
+
+            return breadcrumbs[breadcrumbs.Count - 2].name;
+        }
+
         /// <summary>
         /// Gets the value of a specific property from the produc'ts additional properties
         /// </summary>

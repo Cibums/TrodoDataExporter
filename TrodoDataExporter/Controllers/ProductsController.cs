@@ -27,12 +27,13 @@ namespace TrodoDataExporter.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("Get")]
-        public async Task<ActionResult<Product[]>> GetProducts()
+        public async Task<ActionResult<ProductSimplified[]>> GetProducts()
         {
             try
             {
                 GetObjectResponse response = await _s3Service.GetLatestS3Object();
-                return await _s3Service.DeserializeS3Object(response);
+                Product[] products = await _s3Service.DeserializeS3Object(response);
+                return products.Select(product => new ProductSimplified(product)).ToArray();
             }
             catch (AmazonS3Exception e)
             {
