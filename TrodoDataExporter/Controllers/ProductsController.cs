@@ -10,7 +10,7 @@ using TrodoDataExporter.Services;
 namespace TrodoDataExporter.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class ProductsController : ControllerBase
     {
         private readonly ILogger<ProductsController> _logger;
