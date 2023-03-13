@@ -22,6 +22,10 @@ namespace TrodoDataExporter.Controllers
             _s3Service = s3Service;
         }
 
+        /// <summary>
+        /// Gets a JSON of all products from Trodo.se
+        /// </summary>
+        /// <returns></returns>
         [HttpGet("Get")]
         public async Task<ActionResult<Product[]>> GetProducts()
         {
@@ -42,6 +46,11 @@ namespace TrodoDataExporter.Controllers
             }
         }
 
+        /// <summary>
+        /// Gets a JSON of all products from Trodo.se in a certain category
+        /// </summary>
+        /// <param name="category"></param>
+        /// <returns></returns>
         [HttpGet("GetByCategory/{category}")]
         public async Task<ActionResult<Product[]>> GetProductsFromBrand(string category)
         {
@@ -64,6 +73,16 @@ namespace TrodoDataExporter.Controllers
             }
         }
 
+        /// <summary>
+        /// Gets a JSON of all products from Trodo.se after going through a filtering process
+        /// </summary>
+        /// <param name="manufacturer"></param>
+        /// <param name="ean"></param>
+        /// <param name="articleNumber"></param>
+        /// <param name="minPrice"></param>
+        /// <param name="maxPrice"></param>
+        /// <param name="isInStock"></param>
+        /// <returns></returns>
         [HttpGet("GetFiltered")]
         public async Task<ActionResult<Product[]>> GetFiltered(
             string? manufacturer = null,
