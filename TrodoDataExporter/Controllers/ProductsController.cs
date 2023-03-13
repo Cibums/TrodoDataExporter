@@ -10,7 +10,7 @@ using TrodoDataExporter.Services;
 namespace TrodoDataExporter.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class ProductsController : ControllerBase
     {
         private readonly ILogger<ProductsController> _logger;
@@ -26,7 +26,7 @@ namespace TrodoDataExporter.Controllers
         /// Gets a JSON of all products from Trodo.se
         /// </summary>
         /// <returns></returns>
-        [HttpGet("Get")]
+        [HttpGet("get")]
         public async Task<ActionResult<ProductSimplified[]>> GetProducts()
         {
             try
