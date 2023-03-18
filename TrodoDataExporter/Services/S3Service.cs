@@ -23,13 +23,14 @@ namespace TrodoDataExporter.Services
 
         public S3Service(ILogger<S3Service> logger, IMemoryCache cache)
         {
+            //Initializing
+            _cache = cache;
+            _logger = logger;
+
             //Loading acess keys from environment variables
             DotEnv.Load();
             accessKey = Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
             secretKey = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
-
-            _cache = cache;
-            _logger = logger;
 
             //Setting s3 client options
             _s3Client = new AmazonS3Client(accessKey, secretKey, new AmazonS3Config
@@ -42,16 +43,17 @@ namespace TrodoDataExporter.Services
         /// <summary>
         /// Gets the latest batch of products scraped by Zyte.com
         /// </summary>
+        /// <param name="fromCache"></param>
         /// <returns></returns>
         /// <exception cref="FileNotFoundException"></exception>
-        public async Task<GetObjectResponse> GetLatestS3Object()
+        public async Task<GetObjectResponse> GetLatestS3Object(bool fromCache = true)
         {
             _logger.LogInformation("Trying to get all product data");
 
             var cacheKey = "LatestS3Object";
 
             // Check cache for latest S3 object
-            if (_cache.TryGetValue(cacheKey, out GetObjectResponse cachedResponse))
+            if (fromCache && _cache.TryGetValue(cacheKey, out GetObjectResponse cachedResponse))
             {
                 _logger.LogInformation("Got product data from cache");
                 return cachedResponse;
@@ -102,9 +104,8 @@ namespace TrodoDataExporter.Services
         /// <summary>
         /// Deserializes the a response from AWS to Product[]
         /// </summary>
-        /// <param name="objectResponse"></param>
         /// <returns></returns>
-        public async Task<Product[]> DeserializeS3Object(GetObjectResponse objectResponse)
+        public async Task<Product[]> GetLatestS3ObjectDeserialized()
         {
             var cacheKey = "LatestS3ObjectDeserialized";
 
@@ -115,6 +116,17 @@ namespace TrodoDataExporter.Services
                 return cachedResponse;
             }
 
+            var objectResponse = await GetLatestS3Object();
+            return await DeserializeS3Object(objectResponse, cacheKey);
+        }
+
+        /// <summary>
+        /// Deserializes the a response from AWS to Product[]
+        /// </summary>
+        /// <param name="objectResponse"></param>
+        /// <returns></returns>
+        public async Task<Product[]> DeserializeS3Object(GetObjectResponse objectResponse, string cacheKey = "LatestS3ObjectDeserialized")
+        {
             //Deserialize object to Product model and return
             using (var streamReader = new StreamReader(objectResponse.ResponseStream))
             {
