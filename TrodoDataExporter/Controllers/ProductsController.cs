@@ -30,8 +30,7 @@ namespace TrodoDataExporter.Controllers
         public async Task<ActionResult<ProductSimplified[]>> GetProducts()
         {
             _logger.LogInformation("Getting all products");
-            GetObjectResponse response = await _s3Service.GetLatestS3Object();
-            Product[] products = await _s3Service.DeserializeS3Object(response);
+            Product[] products = await _s3Service.GetLatestS3ObjectDeserialized();
             return products.Select(product => new ProductSimplified(product)).ToArray();
         }
 
@@ -58,8 +57,8 @@ namespace TrodoDataExporter.Controllers
         )
         {
             _logger.LogInformation("Getting filtered products");
-            GetObjectResponse response = await _s3Service.GetLatestS3Object();
-            Product[] allProducts = await _s3Service.DeserializeS3Object(response);
+            Product[] products = await _s3Service.GetLatestS3ObjectDeserialized();
+
             Func<Product, bool> filter = p =>
                 (manufacturer == null || p.Manufacturer().Equals(manufacturer.ToLower())) &&
                 (ean == null || p.EAN().ToLower().Equals(ean.ToLower())) &&
@@ -69,7 +68,7 @@ namespace TrodoDataExporter.Controllers
                 (minPrice == null || p.Price() >= minPrice) &&
                 (maxPrice == null || p.Price() <= maxPrice);
 
-            return allProducts.Where(filter).ToArray();
+            return products.Where(filter).ToArray();
         }
     }
 }
