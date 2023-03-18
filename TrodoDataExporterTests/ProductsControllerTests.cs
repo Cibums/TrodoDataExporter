@@ -29,7 +29,7 @@ namespace TrodoDataExporterTests
             var products = new[] { new Product(), new Product() };
             var response = new GetObjectResponse { ResponseStream = new MemoryStream(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(products))) };
             var s3Service = new Mock<IS3Service>();
-            s3Service.Setup(s => s.GetLatestS3Object()).ReturnsAsync(response);
+            s3Service.Setup(s => s.GetLatestS3Object(true)).ReturnsAsync(response);
             _controller._s3Service = s3Service.Object;
 
             // Act
