@@ -102,7 +102,7 @@ namespace TrodoDataExporter.Services
         }
 
         /// <summary>
-        /// Deserializes the a response from AWS to Product[]
+        /// Gets deserialized products from AWS as Product[]
         /// </summary>
         /// <returns></returns>
         public async Task<Product[]> GetLatestS3ObjectDeserialized()
