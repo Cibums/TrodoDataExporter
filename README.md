@@ -10,8 +10,12 @@ There are four endpoints in this API. The endpoints in the category controller u
 ### Get Products
 It gets a JSON of all products from Trodo.se.
 
+*This endpoint is available as both simplified and extended. Simplified is a simplified model that only contains the data we usually use. Extended is the model that is directly gotten from Zyte.com*
+
 ### Get Products Filtered
 It gets a JSON of all products from Trodo.se, but it's filtered through several criteria. So you can, for example, choose to only return products from a specific manufacturer or within a certain price range.
+
+*This endpoint is available as both simplified and extended. Simplified is a simplified model that only contains the data we usually use. Extended is the model that is directly gotten from Zyte.com*
 
 ### Get Category Tree
 It gets a JSON of the whole category tree of the website. 
@@ -34,6 +38,13 @@ I'm a strong believer and advocate for the agile testing pyramid framework.
 ![image](https://user-images.githubusercontent.com/56683094/226146177-678dcb74-e783-489b-bbdc-c6fa80648aac.png)
 
 I believe in high code coverage to make QA engineers' lives easier. Furthermore, even though each ticket will take a little longer, the time saved by preventing incidents and decreasing the time the QA has to spend on each ticket will reduce the total development time for a project. Therefore, I have also included many unit tests in this project.
+
+## Deployment
+This project is deployed publically at:
+
+https://trodo-data-exporter-web-api.azurewebsites.net/swagger/index.html
+
+The production build process and deployment are set up automatically with Github Actions. When the main branch is updated, the app is automatically deployed to an Azure environment. I decided to use Azure, because I personally think it is easier to work with when it comes to deployment, even though I use AWS in other parts of this project.
 
 ## Other
 A final thing to mention is that this is a small project, but it has been designed with scalability in mind. Therefore, it's built using best practices, and as separated as possible from the beginning, so it's easy to continue building on.
