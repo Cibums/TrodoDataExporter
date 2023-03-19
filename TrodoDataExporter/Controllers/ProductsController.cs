@@ -26,12 +26,48 @@ namespace TrodoDataExporter.Controllers
         /// Gets a JSON of all products from Trodo.se
         /// </summary>
         /// <returns></returns>
-        [HttpGet("Get")]
-        public async Task<ActionResult<ProductSimplified[]>> GetProducts()
+        [HttpGet("all")]
+        public async Task<ActionResult<ProductSimplified[]>> GetProductsSimplified()
         {
             _logger.LogInformation("Getting all products");
-            GetObjectResponse response = await _s3Service.GetLatestS3Object();
-            Product[] products = await _s3Service.DeserializeS3Object(response);
+            Product[] products = await _s3Service.GetLatestS3ObjectDeserialized();
+            return products.Select(product => new ProductSimplified(product)).ToArray();
+        }
+
+        /// <summary>
+        /// Gets a JSON of all products from Trodo.se
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("allextended")]
+        public async Task<ActionResult<Product[]>> GetProductsExtended()
+        {
+            _logger.LogInformation("Getting all products");
+            return await _s3Service.GetLatestS3ObjectDeserialized();
+        }
+
+        /// <summary>
+        /// Gets a JSON of all products from Trodo.se after going through a filtering process
+        /// </summary>
+        /// <param name="manufacturer"></param>
+        /// <param name="ean"></param>
+        /// <param name="articleNumber"></param>
+        /// <param name="category"></param>
+        /// <param name="minPrice"></param>
+        /// <param name="maxPrice"></param>
+        /// <param name="isInStock"></param>
+        /// <returns></returns>
+        [HttpGet("filter")]
+        public async Task<ActionResult<ProductSimplified[]>> GetFilteredSimplified(
+            string? manufacturer = null,
+            string? ean = null,
+            string? articleNumber = null,
+            string? category = null,
+            decimal? minPrice = null,
+            decimal? maxPrice = null,
+            bool? isInStock = null
+        )
+        {
+            var products = await FilterProducts(manufacturer, ean, articleNumber, category, minPrice, maxPrice, isInStock);
             return products.Select(product => new ProductSimplified(product)).ToArray();
         }
 
@@ -46,8 +82,22 @@ namespace TrodoDataExporter.Controllers
         /// <param name="maxPrice"></param>
         /// <param name="isInStock"></param>
         /// <returns></returns>
-        [HttpGet("GetFiltered")]
-        public async Task<ActionResult<Product[]>> GetFiltered(
+        [HttpGet("filterextended")]
+        public async Task<ActionResult<Product[]>> GetFilteredExtended(
+            string? manufacturer = null,
+            string? ean = null,
+            string? articleNumber = null,
+            string? category = null,
+            decimal? minPrice = null,
+            decimal? maxPrice = null,
+            bool? isInStock = null
+        )
+        {
+            return await FilterProducts(manufacturer, ean, articleNumber, category, minPrice, maxPrice, isInStock);
+        }
+
+        [NonAction]
+        public async Task<Product[]> FilterProducts(
             string? manufacturer = null,
             string? ean = null,
             string? articleNumber = null,
@@ -58,8 +108,8 @@ namespace TrodoDataExporter.Controllers
         )
         {
             _logger.LogInformation("Getting filtered products");
-            GetObjectResponse response = await _s3Service.GetLatestS3Object();
-            Product[] allProducts = await _s3Service.DeserializeS3Object(response);
+            Product[] objectResponse = await _s3Service.GetLatestS3ObjectDeserialized();
+
             Func<Product, bool> filter = p =>
                 (manufacturer == null || p.Manufacturer().Equals(manufacturer.ToLower())) &&
                 (ean == null || p.EAN().ToLower().Equals(ean.ToLower())) &&
@@ -69,7 +119,7 @@ namespace TrodoDataExporter.Controllers
                 (minPrice == null || p.Price() >= minPrice) &&
                 (maxPrice == null || p.Price() <= maxPrice);
 
-            return allProducts.Where(filter).ToArray();
+            return objectResponse.Where(filter).ToArray();
         }
     }
 }

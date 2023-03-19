@@ -3,7 +3,9 @@ using Amazon.S3;
 using Amazon.S3.Model;
 using dotenv.net;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using TrodoDataExporter.Controllers;
 using TrodoDataExporter.Models;
 
 namespace TrodoDataExporter.Services
@@ -13,18 +15,22 @@ namespace TrodoDataExporter.Services
         private readonly string? accessKey;
         private readonly string? secretKey;
         private readonly string scrapeUrl = @"https://www.trodo.se/";
-        private readonly MemoryCache _cache;
-        private const string BUCKET_NAME = "trodo-scraper";
-        private IAmazonS3 _s3Client;
+        private readonly ILogger _logger;
+        private readonly IMemoryCache _cache;
+        private readonly IAmazonS3 _s3Client;
 
-        public S3Service()
+        private const string BUCKET_NAME = "trodo-scraper";
+
+        public S3Service(ILogger<S3Service> logger, IMemoryCache cache)
         {
+            //Initializing
+            _cache = cache;
+            _logger = logger;
+
             //Loading acess keys from environment variables
             DotEnv.Load();
             accessKey = Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID");
             secretKey = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY");
-
-            _cache = new MemoryCache(new MemoryCacheOptions());
 
             //Setting s3 client options
             _s3Client = new AmazonS3Client(accessKey, secretKey, new AmazonS3Config
@@ -37,21 +43,23 @@ namespace TrodoDataExporter.Services
         /// <summary>
         /// Gets the latest batch of products scraped by Zyte.com
         /// </summary>
+        /// <param name="fromCache"></param>
         /// <returns></returns>
         /// <exception cref="FileNotFoundException"></exception>
-        public async Task<GetObjectResponse> GetLatestS3Object()
+        public async Task<GetObjectResponse> GetLatestS3Object(bool fromCache = true)
         {
+            _logger.LogInformation("Trying to get all product data");
+
             var cacheKey = "LatestS3Object";
 
             // Check cache for latest S3 object
-            if (_cache.TryGetValue(cacheKey, out GetObjectResponse cachedResponse))
+            if (fromCache && _cache.TryGetValue(cacheKey, out GetObjectResponse cachedResponse))
             {
-                // Check if cache is too old
-                if (DateTime.UtcNow - cachedResponse.LastModified < TimeSpan.FromHours(1))
-                {
-                    return cachedResponse;
-                }
+                _logger.LogInformation("Got product data from cache");
+                return cachedResponse;
             }
+
+            _logger.LogInformation("Trying to get all product data from server");
 
             // Retrieve all objects from the S3 bucket
             ListObjectsV2Request request = new ListObjectsV2Request
@@ -66,6 +74,7 @@ namespace TrodoDataExporter.Services
 
             if (objectsArray.Length <= 0)
             {
+                _logger.LogError("Did not find any products");
                 throw new FileNotFoundException("No objects found in the S3 bucket");
             }
 
@@ -81,9 +90,34 @@ namespace TrodoDataExporter.Services
             var objectResponse = await _s3Client.GetObjectAsync(getObjectRequest).ConfigureAwait(false);
 
             // Store response in cache
-            _cache.Set(cacheKey, objectResponse, DateTimeOffset.UtcNow.AddHours(1));
+            var cacheEntryOptions = new MemoryCacheEntryOptions()
+                .SetSlidingExpiration(TimeSpan.FromSeconds(300))
+                .SetAbsoluteExpiration(TimeSpan.FromHours(1))
+                .SetPriority(CacheItemPriority.Normal)
+                .SetSize(1024);
+
+            _cache.Set(cacheKey, objectResponse, cacheEntryOptions);
 
             return objectResponse;
+        }
+
+        /// <summary>
+        /// Gets deserialized products from AWS as Product[]
+        /// </summary>
+        /// <returns></returns>
+        public async Task<Product[]> GetLatestS3ObjectDeserialized()
+        {
+            var cacheKey = "LatestS3ObjectDeserialized";
+
+            // Check cache for latest S3 object
+            if (_cache.TryGetValue(cacheKey, out Product[] cachedResponse))
+            {
+                _logger.LogInformation("Got deserialized products from cache");
+                return cachedResponse;
+            }
+
+            var objectResponse = await GetLatestS3Object();
+            return await DeserializeS3Object(objectResponse, cacheKey);
         }
 
         /// <summary>
@@ -91,7 +125,7 @@ namespace TrodoDataExporter.Services
         /// </summary>
         /// <param name="objectResponse"></param>
         /// <returns></returns>
-        public async Task<Product[]> DeserializeS3Object(GetObjectResponse objectResponse)
+        public async Task<Product[]> DeserializeS3Object(GetObjectResponse objectResponse, string cacheKey = "LatestS3ObjectDeserialized")
         {
             //Deserialize object to Product model and return
             using (var streamReader = new StreamReader(objectResponse.ResponseStream))
@@ -106,6 +140,16 @@ namespace TrodoDataExporter.Services
                         if (product != null) products.Add(product);
                     }
                 }
+
+                // Store response in cache
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                    .SetSlidingExpiration(TimeSpan.FromSeconds(60))
+                    .SetAbsoluteExpiration(TimeSpan.FromHours(1))
+                    .SetPriority(CacheItemPriority.Normal)
+                    .SetSize(1024);
+
+                _cache.Set(cacheKey, products.ToArray(), cacheEntryOptions);
+
                 return products.ToArray();
             }
         }

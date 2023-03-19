@@ -10,21 +10,20 @@ namespace TrodoDataExporter.Controllers
     [ApiController]
     public class CategoriesController : ControllerBase
     {
-        private readonly ILogger<ProductsController> _logger;
+        private readonly ILogger<CategoriesController> _logger;
         public IS3Service _s3Service;
 
-        public CategoriesController(ILogger<ProductsController> logger, IS3Service s3Service)
+        public CategoriesController(ILogger<CategoriesController> logger, IS3Service s3Service)
         {
             _logger = logger;
             _s3Service = s3Service;
         }
 
-        [HttpGet("CategoryTree")]
+        [HttpGet("tree")]
         public async Task<ActionResult<IEnumerable<Category>>> GetCategoryTree()
         {
             _logger.LogInformation("Getting all categories");
-            var response = await _s3Service.GetLatestS3Object();
-            var products = await _s3Service.DeserializeS3Object(response);
+            var products = await _s3Service.GetLatestS3ObjectDeserialized();
 
             var categoryPaths = products
             .Select(product => product.CategoryPath())
@@ -35,12 +34,11 @@ namespace TrodoDataExporter.Controllers
             return Ok(categoryTree);
         }
 
-        [HttpGet("MostSpecificCategories")]
+        [HttpGet("mostspecific")]
         public async Task<ActionResult<HashSet<string>>> GetMostSpecificCategories()
         {
             _logger.LogInformation("Getting most specific categories");
-            var response = await _s3Service.GetLatestS3Object();
-            var products = await _s3Service.DeserializeS3Object(response);
+            var products = await _s3Service.GetLatestS3ObjectDeserialized();
 
             var specificCategories = products
             .Select(product => product.MostSpecificCategory())

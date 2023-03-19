@@ -21,7 +21,6 @@ namespace TrodoDataExporter.Middlewares
         {
             try
             {
-                Console.WriteLine("Went through middleware");
                 await _next(context);
             }
             catch (AmazonS3Exception e)
