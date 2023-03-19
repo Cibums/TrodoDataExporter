@@ -19,7 +19,7 @@ namespace TrodoDataExporter.Controllers
             _s3Service = s3Service;
         }
 
-        [HttpGet("CategoryTree")]
+        [HttpGet("tree")]
         public async Task<ActionResult<IEnumerable<Category>>> GetCategoryTree()
         {
             _logger.LogInformation("Getting all categories");
@@ -34,7 +34,7 @@ namespace TrodoDataExporter.Controllers
             return Ok(categoryTree);
         }
 
-        [HttpGet("MostSpecificCategories")]
+        [HttpGet("mostspecific")]
         public async Task<ActionResult<HashSet<string>>> GetMostSpecificCategories()
         {
             _logger.LogInformation("Getting most specific categories");
