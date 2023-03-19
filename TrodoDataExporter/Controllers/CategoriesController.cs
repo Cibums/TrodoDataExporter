@@ -10,10 +10,10 @@ namespace TrodoDataExporter.Controllers
     [ApiController]
     public class CategoriesController : ControllerBase
     {
-        private readonly ILogger<ProductsController> _logger;
+        private readonly ILogger<CategoriesController> _logger;
         public IS3Service _s3Service;
 
-        public CategoriesController(ILogger<ProductsController> logger, IS3Service s3Service)
+        public CategoriesController(ILogger<CategoriesController> logger, IS3Service s3Service)
         {
             _logger = logger;
             _s3Service = s3Service;
