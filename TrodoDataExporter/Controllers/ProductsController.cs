@@ -26,7 +26,7 @@ namespace TrodoDataExporter.Controllers
         /// Gets a JSON of all products from Trodo.se
         /// </summary>
         /// <returns></returns>
-        [HttpGet("all")]
+        [HttpGet("All")]
         public async Task<ActionResult<ProductSimplified[]>> GetProductsSimplified()
         {
             _logger.LogInformation("Getting all products");
@@ -38,7 +38,7 @@ namespace TrodoDataExporter.Controllers
         /// Gets a JSON of all products from Trodo.se
         /// </summary>
         /// <returns></returns>
-        [HttpGet("allextended")]
+        [HttpGet("AllExtended")]
         public async Task<ActionResult<Product[]>> GetProductsExtended()
         {
             _logger.LogInformation("Getting all products");
@@ -56,7 +56,7 @@ namespace TrodoDataExporter.Controllers
         /// <param name="maxPrice"></param>
         /// <param name="isInStock"></param>
         /// <returns></returns>
-        [HttpGet("filter")]
+        [HttpGet("Filter")]
         public async Task<ActionResult<ProductSimplified[]>> GetFilteredSimplified(
             string? manufacturer = null,
             string? ean = null,
@@ -82,7 +82,7 @@ namespace TrodoDataExporter.Controllers
         /// <param name="maxPrice"></param>
         /// <param name="isInStock"></param>
         /// <returns></returns>
-        [HttpGet("filterextended")]
+        [HttpGet("FilterExtended")]
         public async Task<ActionResult<Product[]>> GetFilteredExtended(
             string? manufacturer = null,
             string? ean = null,
